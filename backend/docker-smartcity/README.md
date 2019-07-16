@@ -1,4 +1,4 @@
-# Docker-compose files for a simple uptodate
+# Docker-compose file for below services 
 # InfluxDB
 # + Grafana stack
 # + Telegraf
