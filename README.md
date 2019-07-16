@@ -16,10 +16,12 @@ Below sensors are connected to the RaspberryPi 3B+
 * Temperature/Humidity Sensor (DHT11)
 * PIR Sensor
 * BME680 Sensor(Indoor Air quality)
+
 Actuators:
 * Plugwise stick(Controls two plugwise circles)
 * LCD Display
 * LED 
+
 Services running in RPi:
 * Python script for sensor data collection and publishing - Data is collected from sensors connected to GrovePi+ and publish to MQTT broker
 * Python script to enable REST Api server to control the actuators. (This script also provies REST Api to collect sensor data)
