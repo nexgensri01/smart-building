@@ -2,30 +2,63 @@
 #
 import paho.mqtt.client as mqtt
 import requests 
+import pyowm
 
-temperature_desired=24
+temperature_desired=27.02
 humidity_desired=50
 light_desired=70
 iaq_desired=50
+outdoor_temperature = 0
+minimum_temperature_range = temperature_desired - 2
+maximum_temperature_range = temperature_desired + 2
+weathercode = 0
 
 actuator_url="http://192.168.1.100:3030"
 meeting_room=actuator_url+"/meeting"
 normal_room=actuator_url+"/353"
 
+def on_message_weather_forecast():
+    global outdoor_temperature
+    global weathercode
+    stuttgart_cityID = 3220785
+    owm = pyowm.OWM('d908b571ca6ddb0814c1940fdcaa7324')
+    observation = owm.weather_at_id(3220785)
+    weather_report = observation.get_weather()
+    outdoor_temperature = weather_report.get_temperature('celsius')['temp']
+    weathercode = weather_report.get_weather_code()
+
 def on_message_temp(mosq, obj, msg):
 #    print("MESSAGES: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
     tag,value = msg.payload.split("=")
+    on_message_weather_forecast()
     print("Temp = "+value)
-    if float(value)<temperature_desired:
-        print("Turn ON Heater")
-        requests.get(normal_room+"/heater"+"/on")
-    elif float(value)>temperature_desired:
-        print("Turn ON Air Conditioner")
-        requests.get(normal_room+"/ac"+"/on")
+    print("Outdoor temperature="+(str(outdoor_temperature)))
+    if(float(value) < temperature_desired):
+        if (outdoor_temperature <= maximum_temperature_range) and (outdoor_temperature >= temperature_desired):
+            if weathercode not in range(200, 623):
+                print("Open Windows")
+                requests.get(normal_room + "/window" + "/on")
+                requests.get(normal_room + "/ac" + "/off")
+                requests.get(normal_room + "/heater" + "/off")
+        else:
+            print("Close Windows")
+            requests.get(normal_room + "/window" + "/off")
+            requests.get(normal_room + "/heater" + "/on")
+    elif(float(value) > temperature_desired):
+        if(outdoor_temperature >= minimum_temperature_range) and (outdoor_temperature <= temperature_desired):
+            if weathercode not in range(200, 623):
+                print("Open Windows")
+                requests.get(normal_room + "/window" + "/on")
+                requests.get(normal_room + "/ac" + "/off")
+                requests.get(normal_room + "/heater" + "/off")
+        else:
+            print("Close Windows")
+            requests.get(normal_room + "/window" + "/off")
+            requests.get(normal_room + "/ac" + "/on")
     else:
-        print("Room is in desired temperature")
-        requests.get(normal_room+"/ac"+"/off")
-        requests.get(normal_room+"/heater"+"/off")
+        print("Room is at desired temperature")
+        requests.get(normal_room + "/ac" + "/off")
+        requests.get(normal_room + "/heater" + "/off")
 
 def on_message_humidity(mosq, obj, msg):
 #    print("BYTES: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
